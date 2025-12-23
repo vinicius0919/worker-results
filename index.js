@@ -66,7 +66,7 @@ async function start() {
       const payload = JSON.parse(msg.content.toString());
       const message = formatMessage(payload);
 
-      //await sendToWhatsapp(`${message}`);
+      await sendToWhatsapp(`${message}`);
       IDS_TELEGRAM.map(async (id) => {
         console.log(id, message)
         await sendToTelegram(id, `${message}`);

@@ -6,15 +6,16 @@ const {
   QUEUE_RESULTS = "job_results",
   WHATSAPP_API_URL,
   WHATSAPP_GROUP_ID,
+  BOT_ID,
 } = process.env;
 
+const IDS_TELEGRAM = ["7951459788", "6812050784"];
 
 const { formatJobMessage } = require("./src/utils/formatJobMessage");
 
-
 function formatMessage(data) {
   const job = data.extracted;
-  console.log(job)
+  console.log(job);
   return formatJobMessage(job);
 }
 
@@ -33,6 +34,22 @@ async function sendToWhatsapp(message) {
   }
 }
 
+const sendToTelegram = async (id, text) => {
+  const res = await fetch(`https://api.telegram.org/bot${BOT_ID}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: id,
+      text,
+      parse_mode: "Markdown",
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Telegram error ${res.status}`);
+  }
+};
+
 async function start() {
   const conn = await amqp.connect(RABBIT_URL);
   const channel = await conn.createChannel();
@@ -49,11 +66,13 @@ async function start() {
       const payload = JSON.parse(msg.content.toString());
       const message = formatMessage(payload);
 
-      console.log(typeof message)
-      await sendToWhatsapp(`${message}`);
-
+      //await sendToWhatsapp(`${message}`);
+      IDS_TELEGRAM.map(async (id) => {
+        console.log(id, message)
+        await sendToTelegram(id, `${message}`);
+      });
       channel.ack(msg);
-      console.log("📨 Mensagem enviada para WhatsApp");
+      console.log("📨 Mensagem enviada para WhatsApp e Telegram");
     } catch (err) {
       console.error("❌ Erro WhatsApp:", err.message);
       channel.nack(msg, false, true); // requeue
